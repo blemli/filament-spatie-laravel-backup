@@ -27,6 +27,7 @@ return [
 
                 'cleanup' => [
                     'in_rotation' => 'In rotation',
+                    'retained' => 'Still retained',
                 ],
 
                 'filters' => [

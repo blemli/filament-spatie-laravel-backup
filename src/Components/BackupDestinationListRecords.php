@@ -49,7 +49,7 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
         return $table
             ->deferLoading()
             ->records(
-                function (?string $sortColumn, ?string $sortDirection, ?string $search) {
+                function (?string $sortColumn, ?string $sortDirection, ?string $search, ?array $filters) {
                     $ttl = FilamentSpatieLaravelBackupPlugin::get()->getCacheTtlSeconds();
 
                     $data = [];
@@ -58,7 +58,25 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                         $data = array_merge($data, FilamentSpatieLaravelBackup::getBackupDestinationData($disk, $ttl));
                     }
 
+                    $selectedDisk = $filters['disk']['value'] ?? null;
+                    $selectedType = $filters['type']['value'] ?? null;
+                    $selectedCleanup = $filters['cleanup']['value'] ?? null;
+
                     return collect($data)
+                        ->when(
+                            filled($selectedDisk),
+                            fn (Collection $data): Collection => $data->where('disk', $selectedDisk),
+                        )
+                        ->when(
+                            filled($selectedType),
+                            fn (Collection $data): Collection => $data->where('type', $selectedType),
+                        )
+                        ->when(
+                            filled($selectedCleanup),
+                            fn (Collection $data): Collection => $data->filter(
+                                fn (array $record): bool => ($record['cleanup_at'] <= now()->getTimestamp()) === ($selectedCleanup === 'in_rotation'),
+                            ),
+                        )
                         ->when(
                             filled($sortColumn),
                             fn (Collection $data): Collection => $data->sortBy(
@@ -112,6 +130,19 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                 SelectFilter::make('disk')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.filters.disk'))
                     ->options(FilamentSpatieLaravelBackup::getFilterDisks()),
+                SelectFilter::make('type')
+                    ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.type'))
+                    ->options([
+                        'db' => __('filament-spatie-backup::backup.components.backup_destination_list.table.types.db'),
+                        'files' => __('filament-spatie-backup::backup.components.backup_destination_list.table.types.files'),
+                        'all' => __('filament-spatie-backup::backup.components.backup_destination_list.table.types.all'),
+                    ]),
+                SelectFilter::make('cleanup')
+                    ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.cleanup_in'))
+                    ->options([
+                        'retained' => __('filament-spatie-backup::backup.components.backup_destination_list.table.cleanup.retained'),
+                        'in_rotation' => __('filament-spatie-backup::backup.components.backup_destination_list.table.cleanup.in_rotation'),
+                    ]),
             ])
             ->recordActions([
                 Action::make('download')
