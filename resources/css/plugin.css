@@ -19,3 +19,14 @@
 .fsb-w-full {
     width: 100%;
 }
+/* Split "Create Backup" button: fuse the main segment with the dropdown
+   trigger, which fi-btn-group can't style (it only fuses direct children). */
+.fi-btn-group .fi-btn.fsb-split-main {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+.fi-btn.fsb-split-more {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    box-shadow: -1px 0 0 0 rgb(255 255 255 / 0.3);
+}
