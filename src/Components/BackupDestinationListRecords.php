@@ -102,13 +102,13 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                 Action::make('download')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.actions.download'))
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->visible(auth()->user()->can('download-backup'))
+                    ->visible(auth()->user()?->can('download-backup') ?? false)
                     ->action(fn (array $record) => Storage::disk($record['disk'])->download($record['path'])),
 
                 Action::make('delete')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.actions.delete'))
                     ->icon('heroicon-o-trash')
-                    ->visible(auth()->user()->can('delete-backup'))
+                    ->visible(auth()->user()?->can('delete-backup') ?? false)
                     ->requiresConfirmation()
                     ->color('danger')
                     ->modalIcon('heroicon-o-trash')
