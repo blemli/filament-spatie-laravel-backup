@@ -163,6 +163,22 @@ php artisan db:seed --class=BackupPermissionSeeder
 
 After this, users with the `backup` role will have full access to the backup panel.
 
+### Customising action authorization
+
+If you don't use a permission system (or want different rules), you can replace the
+gate checks per action with a boolean or closure on the plugin:
+
+```php
+FilamentSpatieLaravelBackupPlugin::make()
+    ->authorizeCreateUsing(fn (): bool => auth()->user()->isAdmin())
+    ->authorizeDownloadUsing(true)
+    ->authorizeDeleteUsing(false)
+```
+
+Without these hooks the default gate checks (`create-backup`, `download-backup`,
+`delete-backup`) stay in effect. The checks are enforced server-side, not just by
+hiding buttons.
+
 
 ## Customising navigation
 
@@ -206,7 +222,11 @@ Pass `null` to `navigationGroup()` to remove the page from any navigation group.
 
 ## Customising the polling interval
 
-You can customise the polling interval for the `Backups` by following the steps below:
+The backup tables poll for changes (so backups created elsewhere, e.g. via
+`php artisan backup:run`, show up automatically), and the backup listings are cached
+for one polling interval so each poll hits the storage disk at most once no matter
+how many browsers are polling. You can customise the interval by following the steps
+below:
 
 ```php
 <?php
@@ -225,15 +245,20 @@ class AdminPanelProvider extends PanelProvider
             // ...
             ->plugin(
                 FilamentSpatieLaravelBackupPlugin::make()
-                    ->usingPolingInterval('10s') // default value is 4s
+                    ->usingPollingInterval('10s') // default value is 4s
             );
     }
 }
 ```
 
+Pass `null` to disable polling entirely. (The misspelled `usingPolingInterval()` is
+still supported but deprecated.)
+
 ## Customising the queue
 
-You can customise the queue name for the `Backups` by following the steps below:
+By default the backup job runs in the web process after the response has been sent.
+If you configure a queue, the job is genuinely dispatched to it instead — recommended
+for anything but small backups, since queue workers aren't bound by web timeouts:
 
 ```php
 <?php
@@ -285,6 +310,9 @@ class AdminPanelProvider extends PanelProvider
 }
 ```
 
+The timeout also applies when the job runs on a queue: workers honor it instead of
+killing long backups after their default 60 seconds.
+
 For more details refer to the [set_time_limit](https://www.php.net/manual/en/function.set-time-limit.php) function.
 
 You can also disable the timeout altogether to let the job run as long as needed:
@@ -311,6 +339,32 @@ class AdminPanelProvider extends PanelProvider
     }
 }
 ```
+
+## Backup list columns
+
+Besides path, disk, date and size, the list shows:
+
+- **Type** — whether the backup contains only the database, only files, or both
+  (derived from the filename prefix the panel gives partial backups; backups created
+  by `php artisan backup:run` count as full backups).
+- **Cleanup** — when the backup leaves spatie's `keep_all_backups_for_days` window.
+  Older backups show *In rotation*: the cleanup strategy then thins them out on its
+  daily/weekly/monthly/yearly schedule, so there is no fixed deletion date.
+
+## Downloads
+
+The download action links the browser straight to the file instead of streaming it
+through Livewire (which fails for large archives and in `spa()` mode). Disks that
+support temporary URLs (e.g. S3) get a presigned URL; other disks are served by a
+signed package route that requires a logged-in panel user. Both URL types expire
+after 30 minutes — refresh the page if a long-idle download link has gone stale.
+
+## Concurrent backups
+
+While a backup is running, the create button is disabled and a server-side guard
+rejects further runs. The lock clears when the job finishes or fails, and expires on
+its own (after at least 30 minutes, or the configured timeout if longer) so a crashed
+worker can never block the button permanently.
 
 ## Customising who can access the page
 
