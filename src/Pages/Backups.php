@@ -3,7 +3,6 @@
 namespace ShuvroRoy\FilamentSpatieLaravelBackup\Pages;
 
 use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
@@ -43,33 +42,34 @@ class Backups extends Page
     protected function getHeaderActions(): array
     {
         return [
-            ActionGroup::make([
-                Action::make('create_backup_all')
-                    ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup'))
-                    ->color('primary')
-                    ->extraAttributes(['class' => 'fsb-split-main'])
-                    ->disabled(fn (): bool => $this->isBackupRunning())
-                    ->tooltip(fn (): ?string => $this->isBackupRunning() ? __('filament-spatie-backup::backup.pages.backups.messages.backup_running_tooltip') : null)
-                    ->action(fn () => $this->createBackup(Option::ALL)),
-                ActionGroup::make([
+            Action::make('create_backup')
+                ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup'))
+                ->color('primary')
+                ->button()
+                ->visible(fn (): bool => FilamentSpatieLaravelBackupPlugin::get()->isCreateAuthorized())
+                ->disabled(fn (): bool => $this->isBackupRunning())
+                ->tooltip(fn (): ?string => $this->isBackupRunning() ? __('filament-spatie-backup::backup.pages.backups.messages.backup_running_tooltip') : null)
+                ->modalHeading(__('filament-spatie-backup::backup.pages.backups.modal.label'))
+                ->modalWidth('lg')
+                ->modalSubmitAction(false)
+                ->modalCancelAction(false)
+                ->modalFooterActions([
                     Action::make('create_backup_db')
-                        ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup_db'))
-                        ->disabled(fn (): bool => $this->isBackupRunning())
+                        ->label(__('filament-spatie-backup::backup.pages.backups.modal.buttons.only_db'))
+                        ->color('gray')
+                        ->cancelParentActions()
                         ->action(fn () => $this->createBackup(Option::ONLY_DB)),
                     Action::make('create_backup_files')
-                        ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup_files'))
-                        ->disabled(fn (): bool => $this->isBackupRunning())
+                        ->label(__('filament-spatie-backup::backup.pages.backups.modal.buttons.only_files'))
+                        ->color('gray')
+                        ->cancelParentActions()
                         ->action(fn () => $this->createBackup(Option::ONLY_FILES)),
-                ])
-                    ->tooltip(fn (): ?string => $this->isBackupRunning() ? __('filament-spatie-backup::backup.pages.backups.messages.backup_running_tooltip') : null)
-                    ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup_options'))
-                    ->hiddenLabel()
-                    ->icon('heroicon-m-chevron-down')
-                    ->color('primary')
-                    ->extraAttributes(['class' => 'fsb-split-more']),
-            ])
-                ->buttonGroup()
-                ->visible(fn (): bool => FilamentSpatieLaravelBackupPlugin::get()->isCreateAuthorized()),
+                    Action::make('create_backup_all')
+                        ->label(__('filament-spatie-backup::backup.pages.backups.modal.buttons.db_and_files'))
+                        ->color('primary')
+                        ->cancelParentActions()
+                        ->action(fn () => $this->createBackup(Option::ALL)),
+                ]),
         ];
     }
 

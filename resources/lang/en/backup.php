@@ -54,9 +54,6 @@ return [
         'backups' => [
             'actions' => [
                 'create_backup' => 'Create Backup',
-                'create_backup_db' => 'Only DB',
-                'create_backup_files' => 'Only files',
-                'create_backup_options' => 'More backup options',
             ],
 
             'heading' => 'Backups',
