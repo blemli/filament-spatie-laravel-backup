@@ -15,7 +15,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -106,7 +105,10 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.actions.download'))
                     ->icon('heroicon-o-arrow-down-tray')
                     ->visible(fn (): bool => FilamentSpatieLaravelBackupPlugin::get()->isDownloadAuthorized())
-                    ->action(fn (array $record) => Storage::disk($record['disk'])->download($record['path'])),
+                    // A plain link instead of a Livewire action: streaming the file
+                    // through Livewire fails for large backups, especially in SPA mode.
+                    ->url(fn (array $record): string => FilamentSpatieLaravelBackup::getDownloadUrl($record['disk'], $record['path']))
+                    ->openUrlInNewTab(),
 
                 Action::make('delete')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.actions.delete'))

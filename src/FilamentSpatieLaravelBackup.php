@@ -3,6 +3,8 @@
 namespace ShuvroRoy\FilamentSpatieLaravelBackup;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Spatie\Backup\BackupDestination\Backup;
 use Spatie\Backup\BackupDestination\BackupDestination;
 use Spatie\Backup\Config\MonitoredBackupsConfig;
@@ -50,6 +52,26 @@ class FilamentSpatieLaravelBackup
                 })
                 ->toArray();
         });
+    }
+
+    /**
+     * A URL the browser can download the backup from directly (bypassing Livewire):
+     * a temporary URL when the disk supports them (e.g. S3), otherwise a signed
+     * route that streams the file. Both expire after 30 minutes.
+     */
+    public static function getDownloadUrl(string $disk, string $path): string
+    {
+        $filesystem = Storage::disk($disk);
+
+        if ($filesystem->providesTemporaryUrls()) {
+            return $filesystem->temporaryUrl($path, now()->addMinutes(30));
+        }
+
+        return URL::signedRoute(
+            'filament-spatie-backup.download',
+            ['disk' => $disk, 'path' => $path],
+            now()->addMinutes(30),
+        );
     }
 
     public static function getBackupDestinationStatusData(int $ttlSeconds = 4): array
