@@ -48,15 +48,20 @@ class Backups extends Page
                     ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup'))
                     ->color('primary')
                     ->extraAttributes(['class' => 'fsb-split-main'])
+                    ->disabled(fn (): bool => $this->isBackupRunning())
+                    ->tooltip(fn (): ?string => $this->isBackupRunning() ? __('filament-spatie-backup::backup.pages.backups.messages.backup_running_tooltip') : null)
                     ->action(fn () => $this->createBackup(Option::ALL)),
                 ActionGroup::make([
                     Action::make('create_backup_db')
                         ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup_db'))
+                        ->disabled(fn (): bool => $this->isBackupRunning())
                         ->action(fn () => $this->createBackup(Option::ONLY_DB)),
                     Action::make('create_backup_files')
                         ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup_files'))
+                        ->disabled(fn (): bool => $this->isBackupRunning())
                         ->action(fn () => $this->createBackup(Option::ONLY_FILES)),
                 ])
+                    ->tooltip(fn (): ?string => $this->isBackupRunning() ? __('filament-spatie-backup::backup.pages.backups.messages.backup_running_tooltip') : null)
                     ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup_options'))
                     ->hiddenLabel()
                     ->icon('heroicon-m-chevron-down')
@@ -68,11 +73,27 @@ class Backups extends Page
         ];
     }
 
+    public function isBackupRunning(): bool
+    {
+        return CreateBackupJob::isRunning();
+    }
+
     protected function createBackup(Option $option): void
     {
         $plugin = FilamentSpatieLaravelBackupPlugin::get();
 
         abort_unless($plugin->isCreateAuthorized(), 403);
+
+        if (CreateBackupJob::isRunning()) {
+            Notification::make()
+                ->title(__('filament-spatie-backup::backup.pages.backups.messages.backup_running'))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        CreateBackupJob::markAsRunning($plugin->getTimeout());
 
         $job = new CreateBackupJob($option, $plugin->getTimeout());
 

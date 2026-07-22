@@ -52,6 +52,8 @@ return [
             'messages' => [
                 'backup_success' => 'Erstelle eine neue Sicherung im Hintergrund.',
                 'backup_delete_success' => 'Lösche die Sicherung im Hintergrund.',
+                'backup_running' => 'Es läuft bereits eine Sicherung. Bitte warten, bis sie abgeschlossen ist.',
+                'backup_running_tooltip' => 'Sicherung läuft …',
             ],
 
             'modal' => [

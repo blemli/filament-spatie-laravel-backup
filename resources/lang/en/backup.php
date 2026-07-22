@@ -52,6 +52,8 @@ return [
             'messages' => [
                 'backup_success' => 'Creating a new backup in background.',
                 'backup_delete_success' => 'Deleting this backup in background.',
+                'backup_running' => 'A backup is already running. Please wait until it has finished.',
+                'backup_running_tooltip' => 'Backup in progress …',
             ],
 
             'modal' => [
