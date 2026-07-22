@@ -62,9 +62,15 @@ class Backups extends Page
         /** @var FilamentSpatieLaravelBackupPlugin $plugin */
         $plugin = filament()->getPlugin('filament-spatie-backup');
 
-        CreateBackupJob::dispatch(Option::tryFrom($option) ?? Option::ALL, $plugin->getTimeout())
-            ->onQueue($plugin->getQueue())
-            ->afterResponse();
+        $job = new CreateBackupJob(Option::tryFrom($option) ?? Option::ALL, $plugin->getTimeout());
+
+        if ($plugin->getQueue() !== null) {
+            // afterResponse() would run the job inside the web process and ignore the
+            // queue entirely, so only use it when no queue has been configured.
+            dispatch($job)->onQueue($plugin->getQueue());
+        } else {
+            dispatch($job)->afterResponse();
+        }
 
         $this->dispatch('close-modal', id: 'backup-option');
 
