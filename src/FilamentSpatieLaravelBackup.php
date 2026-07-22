@@ -43,11 +43,22 @@ class FilamentSpatieLaravelBackup
             return BackupDestination::create($disk, config('backup.backup.name'))
                 ->backups()
                 ->map(function (Backup $backup) use ($disk) {
+                    $file = basename($backup->path());
+
                     return [
                         'disk' => $disk,
                         'path' => $backup->path(),
                         'date' => $backup->date()->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'),
                         'size' => Format::humanReadableSize($backup->sizeInBytes()),
+                        // Backups created from the panel are named after their option;
+                        // anything else (e.g. plain artisan backup:run) is a full backup.
+                        'type' => str_starts_with($file, 'only-db-') ? 'db' : (str_starts_with($file, 'only-files-') ? 'files' : 'all'),
+                        // End of spatie's "keep all backups" window; afterwards the
+                        // cleanup strategy thins backups out on a rotation schedule.
+                        'cleanup_at' => $backup->date()
+                            ->clone()
+                            ->addDays((int) config('backup.cleanup.default_strategy.keep_all_backups_for_days', 7))
+                            ->getTimestamp(),
                     ];
                 })
                 ->toArray();

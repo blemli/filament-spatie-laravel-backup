@@ -15,6 +15,18 @@ return [
                     'disk' => 'Disk',
                     'date' => 'Date',
                     'size' => 'Size',
+                    'type' => 'Type',
+                    'cleanup_in' => 'Cleanup',
+                ],
+
+                'types' => [
+                    'db' => 'DB',
+                    'files' => 'Files',
+                    'all' => 'DB & Files',
+                ],
+
+                'cleanup' => [
+                    'in_rotation' => 'In rotation',
                 ],
 
                 'filters' => [

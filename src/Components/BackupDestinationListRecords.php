@@ -14,6 +14,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
@@ -86,6 +87,12 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.disk'))
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('type')
+                    ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.type'))
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'all' ? 'primary' : 'gray')
+                    ->formatStateUsing(fn (string $state): string => __('filament-spatie-backup::backup.components.backup_destination_list.table.types.' . $state))
+                    ->sortable(),
                 TextColumn::make('date')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.date'))
                     ->dateTime()
@@ -94,6 +101,12 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                 TextColumn::make('size')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.size'))
                     ->badge(),
+                TextColumn::make('cleanup_at')
+                    ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.cleanup_in'))
+                    ->formatStateUsing(fn (int $state): string => $state <= now()->getTimestamp()
+                        ? __('filament-spatie-backup::backup.components.backup_destination_list.table.cleanup.in_rotation')
+                        : Carbon::createFromTimestamp($state)->diffForHumans())
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('disk')
