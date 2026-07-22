@@ -14,6 +14,12 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
 
     protected bool | Closure $authorizeUsing = true;
 
+    protected bool | Closure | null $authorizeCreateUsing = null;
+
+    protected bool | Closure | null $authorizeDownloadUsing = null;
+
+    protected bool | Closure | null $authorizeDeleteUsing = null;
+
     protected string $page = Backups::class;
 
     protected ?string $queue = null;
@@ -54,6 +60,51 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
     public function isAuthorized(): bool
     {
         return $this->evaluate($this->authorizeUsing) === true;
+    }
+
+    public function authorizeCreateUsing(bool | Closure $callback): static
+    {
+        $this->authorizeCreateUsing = $callback;
+
+        return $this;
+    }
+
+    public function isCreateAuthorized(): bool
+    {
+        return $this->isActionAuthorized($this->authorizeCreateUsing, 'create-backup');
+    }
+
+    public function authorizeDownloadUsing(bool | Closure $callback): static
+    {
+        $this->authorizeDownloadUsing = $callback;
+
+        return $this;
+    }
+
+    public function isDownloadAuthorized(): bool
+    {
+        return $this->isActionAuthorized($this->authorizeDownloadUsing, 'download-backup');
+    }
+
+    public function authorizeDeleteUsing(bool | Closure $callback): static
+    {
+        $this->authorizeDeleteUsing = $callback;
+
+        return $this;
+    }
+
+    public function isDeleteAuthorized(): bool
+    {
+        return $this->isActionAuthorized($this->authorizeDeleteUsing, 'delete-backup');
+    }
+
+    protected function isActionAuthorized(bool | Closure | null $callback, string $ability): bool
+    {
+        if ($callback === null) {
+            return auth()->user()?->can($ability) ?? false;
+        }
+
+        return $this->evaluate($callback) === true;
     }
 
     public static function get(): static

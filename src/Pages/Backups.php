@@ -46,7 +46,7 @@ class Backups extends Page
                 ->button()
                 ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup'))
                 ->action('openOptionModal')
-                ->visible(auth()->user()?->can('create-backup') ?? false),
+                ->visible(FilamentSpatieLaravelBackupPlugin::get()->isCreateAuthorized()),
         ];
     }
 
@@ -57,7 +57,7 @@ class Backups extends Page
 
     public function create(string $option = ''): void
     {
-        abort_unless(auth()->user()?->can('create-backup') ?? false, 403);
+        abort_unless(FilamentSpatieLaravelBackupPlugin::get()->isCreateAuthorized(), 403);
 
         /** @var FilamentSpatieLaravelBackupPlugin $plugin */
         $plugin = filament()->getPlugin('filament-spatie-backup');
