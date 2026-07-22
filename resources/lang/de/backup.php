@@ -59,7 +59,7 @@ return [
                 'create_backup_options' => 'Weitere Sicherungsoptionen',
             ],
 
-            'heading' => 'Backups',
+            'heading' => 'Sicherungen',
 
             'messages' => [
                 'backup_success' => 'Erstelle eine neue Sicherung im Hintergrund.',
