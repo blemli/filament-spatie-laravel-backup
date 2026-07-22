@@ -3,7 +3,7 @@
     <div
         x-data="{}"
         x-load-css="[@js(\Filament\Support\Facades\FilamentAsset::getStyleHref('filament-spatie-backup-styles', package: 'filament-spatie-backup'))]"
-        @if ($this->isBackupRunning() && ($pollingInterval = ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupPlugin::get()->getPolingInterval()))
+        @if ($this->isBackupRunning() && ($pollingInterval = ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupPlugin::get()->getPollingInterval()))
             wire:poll.{{ $pollingInterval }}
         @endif
     >

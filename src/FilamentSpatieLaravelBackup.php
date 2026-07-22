@@ -35,9 +35,9 @@ class FilamentSpatieLaravelBackup
         return $result;
     }
 
-    public static function getBackupDestinationData(string $disk): array
+    public static function getBackupDestinationData(string $disk, int $ttlSeconds = 4): array
     {
-        return Cache::remember('backups-' . $disk, now()->addSeconds(4), function () use ($disk) {
+        return Cache::remember('backups-' . $disk, now()->addSeconds($ttlSeconds), function () use ($disk) {
             return BackupDestination::create($disk, config('backup.backup.name'))
                 ->backups()
                 ->map(function (Backup $backup) use ($disk) {
@@ -52,9 +52,9 @@ class FilamentSpatieLaravelBackup
         });
     }
 
-    public static function getBackupDestinationStatusData(): array
+    public static function getBackupDestinationStatusData(int $ttlSeconds = 4): array
     {
-        return Cache::remember('backup-statuses', now()->addSeconds(4), function () {
+        return Cache::remember('backup-statuses', now()->addSeconds($ttlSeconds), function () {
             $config = class_exists('Spatie\Backup\Config\MonitoredBackupsConfig')
                 ? MonitoredBackupsConfig::fromArray(config('backup.monitor_backups'))
                 : config('backup.monitor_backups');

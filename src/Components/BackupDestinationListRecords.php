@@ -47,12 +47,15 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
     public function table(Table $table): Table
     {
         return $table
+            ->deferLoading()
             ->records(
                 function (?string $sortColumn, ?string $sortDirection, ?string $search) {
+                    $ttl = FilamentSpatieLaravelBackupPlugin::get()->getCacheTtlSeconds();
+
                     $data = [];
 
                     foreach (FilamentSpatieLaravelBackup::getDisks() as $disk) {
-                        $data = array_merge($data, FilamentSpatieLaravelBackup::getBackupDestinationData($disk));
+                        $data = array_merge($data, FilamentSpatieLaravelBackup::getBackupDestinationData($disk, $ttl));
                     }
 
                     return collect($data)
@@ -132,11 +135,8 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
     }
 
     #[Computed]
-    public function interval(): string
+    public function interval(): ?string
     {
-        /** @var FilamentSpatieLaravelBackupPlugin $plugin */
-        $plugin = filament()->getPlugin('filament-spatie-backup');
-
-        return $plugin->getPolingInterval();
+        return FilamentSpatieLaravelBackupPlugin::get()->getPollingInterval();
     }
 }

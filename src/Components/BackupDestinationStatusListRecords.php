@@ -31,8 +31,11 @@ class BackupDestinationStatusListRecords extends Component implements HasActions
     public function table(Table $table): Table
     {
         return $table
+            ->deferLoading()
             ->records(
-                fn () => FilamentSpatieLaravelBackup::getBackupDestinationStatusData()
+                fn () => FilamentSpatieLaravelBackup::getBackupDestinationStatusData(
+                    FilamentSpatieLaravelBackupPlugin::get()->getCacheTtlSeconds(),
+                )
             )
             ->columns([
                 TextColumn::make('name')
@@ -62,11 +65,8 @@ class BackupDestinationStatusListRecords extends Component implements HasActions
     }
 
     #[Computed]
-    public function interval(): string
+    public function interval(): ?string
     {
-        /** @var FilamentSpatieLaravelBackupPlugin $plugin */
-        $plugin = filament()->getPlugin('filament-spatie-backup');
-
-        return $plugin->getPolingInterval();
+        return FilamentSpatieLaravelBackupPlugin::get()->getPollingInterval();
     }
 }

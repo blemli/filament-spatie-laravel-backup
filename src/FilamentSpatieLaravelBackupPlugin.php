@@ -24,7 +24,7 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
 
     protected ?string $queue = null;
 
-    protected string $interval = '4s';
+    protected ?string $interval = '4s';
 
     protected bool $hasStatusListRecordsTable = true;
 
@@ -149,16 +149,51 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
         return $this->queue;
     }
 
-    public function usingPolingInterval(string $interval): static
+    /**
+     * Set the Livewire polling interval (e.g. '4s', '750ms') used to refresh the
+     * backup tables. Pass null to disable polling entirely.
+     */
+    public function usingPollingInterval(?string $interval): static
     {
         $this->interval = $interval;
 
         return $this;
     }
 
-    public function getPolingInterval(): string
+    /**
+     * @deprecated Use `usingPollingInterval()` instead.
+     */
+    public function usingPolingInterval(string $interval): static
+    {
+        return $this->usingPollingInterval($interval);
+    }
+
+    public function getPollingInterval(): ?string
     {
         return $this->interval;
+    }
+
+    /**
+     * @deprecated Use `getPollingInterval()` instead.
+     */
+    public function getPolingInterval(): ?string
+    {
+        return $this->getPollingInterval();
+    }
+
+    /**
+     * The backup listings are cached for one polling interval, so each poll hits
+     * the (potentially remote) disk at most once, no matter how many clients poll.
+     */
+    public function getCacheTtlSeconds(): int
+    {
+        if ($this->interval === null || preg_match('/^(\d+(?:\.\d+)?)\s*(ms|s)$/', trim($this->interval), $matches) !== 1) {
+            return 4;
+        }
+
+        $seconds = $matches[2] === 'ms' ? ((float) $matches[1]) / 1000 : (float) $matches[1];
+
+        return max((int) ceil($seconds), 1);
     }
 
     /**
