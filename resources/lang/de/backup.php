@@ -8,6 +8,7 @@ return [
                 'actions' => [
                     'download' => 'Download',
                     'delete' => 'Löschen',
+                    'restore' => 'Einspielen',
                 ],
 
                 'fields' => [
@@ -82,9 +83,10 @@ return [
 
                 'fields' => [
                     'archive' => 'Sicherungsdatei (.zip)',
-                    'connection' => 'Datenbankverbindung',
+                    'connections' => 'Einzuspielende Datenbanken',
                     'password' => 'Passwort der Sicherung',
-                    'password_helper' => 'Das Passwort, mit dem die Sicherung verschlüsselt wurde.',
+                    'password_helper' => 'Nur nötig, wenn die Sicherung älter ist als der letzte Passwortwechsel.',
+                    'password_placeholder' => 'Hinterlegtes Passwort',
                     'reset' => 'Bestehende Tabellen zuerst löschen',
                     'reset_helper' => 'Stellt den Stand der Sicherung exakt wieder her. Ausgeschaltet wird über die bestehenden Tabellen eingespielt.',
                     'confirmation' => '«:phrase» eintippen, um fortzufahren',

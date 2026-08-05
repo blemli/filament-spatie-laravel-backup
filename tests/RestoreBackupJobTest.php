@@ -43,7 +43,7 @@ it('runs the restore command with the uploaded archive', function () {
         })
         ->andReturn(0);
 
-    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', 'ceebo', 'hunter2'))->handle();
+    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', ['ceebo'], 'hunter2'))->handle();
 });
 
 it('omits the options it has no value for', function () {
@@ -63,7 +63,7 @@ it('omits the options it has no value for', function () {
 it('discards the uploaded archive once the restore is done', function () {
     fakeRestoreArtisan()->shouldReceive('call')->once()->andReturn(0);
 
-    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->handle();
+    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', discardAfterwards: true))->handle();
 
     Storage::disk('uploads-disk')->assertMissing('restore/archive.zip');
 });
@@ -71,7 +71,7 @@ it('discards the uploaded archive once the restore is done', function () {
 it('discards the uploaded archive when the restore throws', function () {
     fakeRestoreArtisan()->shouldReceive('call')->once()->andThrow(new RuntimeException('restore failed'));
 
-    expect(fn () => (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->handle())
+    expect(fn () => (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', discardAfterwards: true))->handle())
         ->toThrow(RuntimeException::class);
 
     Storage::disk('uploads-disk')->assertMissing('restore/archive.zip');
@@ -90,7 +90,7 @@ it('tracks its running state in the cache', function () {
 it('clears the running flag and the upload when the job fails', function () {
     RestoreBackupJob::markAsRunning(null);
 
-    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->failed(new RuntimeException('worker died'));
+    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', discardAfterwards: true))->failed(new RuntimeException('worker died'));
 
     expect(RestoreBackupJob::isRunning())->toBeFalse();
     Storage::disk('uploads-disk')->assertMissing('restore/archive.zip');
@@ -100,4 +100,19 @@ it('does not share its running flag with the backup job', function () {
     RestoreBackupJob::markAsRunning(null);
 
     expect(CreateBackupJob::isRunning())->toBeFalse();
+});
+
+it('keeps a backup that was restored in place', function () {
+    fakeRestoreArtisan()->shouldReceive('call')->once()->andReturn(0);
+
+    // Restoring from a destination must not consume the archive.
+    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->handle();
+
+    Storage::disk('uploads-disk')->assertExists('restore/archive.zip');
+});
+
+it('restores every requested connection in turn', function () {
+    fakeRestoreArtisan()->shouldReceive('call')->twice()->andReturn(0);
+
+    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', ['sqlite', 'ceebo']))->handle();
 });

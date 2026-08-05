@@ -8,6 +8,7 @@ return [
                 'actions' => [
                     'download' => 'Download',
                     'delete' => 'Delete',
+                    'restore' => 'Restore',
                 ],
 
                 'fields' => [
@@ -82,9 +83,10 @@ return [
 
                 'fields' => [
                     'archive' => 'Backup archive (.zip)',
-                    'connection' => 'Database connection',
+                    'connections' => 'Databases to restore',
                     'password' => 'Archive password',
-                    'password_helper' => 'The password the archive was encrypted with.',
+                    'password_helper' => 'Only needed when the archive predates a password change.',
+                    'password_placeholder' => 'Configured password',
                     'reset' => 'Drop existing tables first',
                     'reset_helper' => 'Leaves the database exactly as the backup had it. Switch off to import on top of the current tables.',
                     'confirmation' => 'Type “:phrase” to continue',

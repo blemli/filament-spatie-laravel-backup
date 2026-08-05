@@ -23,13 +23,20 @@ class RestoreBackupJob implements ShouldQueue
     // Public so queue workers pick it up from the payload; 0 disables the worker timeout.
     public ?int $timeout;
 
+    /**
+     * @param  list<string>  $databaseConnections  restored one after another; empty
+     *                                             leaves the command to its default
+     */
     public function __construct(
         protected readonly string $disk,
         protected readonly string $path,
         // Not $connection: Queueable already owns that name for the queue.
-        protected readonly ?string $databaseConnection = null,
+        protected readonly array $databaseConnections = [],
         protected readonly ?string $password = null,
         protected readonly bool $reset = true,
+        // Only an upload is disposable. An archive restored in place is a real
+        // backup on its destination and has to survive being used.
+        protected readonly bool $discardAfterwards = false,
         ?int $timeout = null,
     ) {
         $this->timeout = $timeout;
@@ -42,13 +49,18 @@ class RestoreBackupJob implements ShouldQueue
         }
 
         try {
-            Artisan::call(RestoreCommand::class, array_filter([
-                '--disk' => $this->disk,
-                '--backup' => $this->path,
-                '--connection' => $this->databaseConnection,
-                '--password' => $this->password,
-                '--reset' => $this->reset,
-            ], fn (mixed $value): bool => $value !== null && $value !== false));
+            // The command restores one connection per run, so a backup covering
+            // several databases takes one run each. Sequentially and inside the
+            // one lock: they come from the same archive and belong together.
+            foreach ($this->databaseConnections ?: [null] as $connection) {
+                Artisan::call(RestoreCommand::class, array_filter([
+                    '--disk' => $this->disk,
+                    '--backup' => $this->path,
+                    '--connection' => $connection,
+                    '--password' => $this->password,
+                    '--reset' => $this->reset,
+                ], fn (mixed $value): bool => $value !== null && $value !== false));
+            }
         } finally {
             $this->discardUpload();
             static::markAsFinished();
@@ -87,6 +99,10 @@ class RestoreBackupJob implements ShouldQueue
      */
     protected function discardUpload(): void
     {
+        if (! $this->discardAfterwards) {
+            return;
+        }
+
         Storage::disk($this->disk)->delete($this->path);
     }
 }

@@ -21,6 +21,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 use ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackup;
 use ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupPlugin;
+use ShuvroRoy\FilamentSpatieLaravelBackup\Schemas\RestoreForm;
 use Spatie\Backup\BackupDestination\Backup;
 use Spatie\Backup\BackupDestination\BackupDestination as SpatieBackupDestination;
 
@@ -159,6 +160,29 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                     // through Livewire fails for large backups, especially in SPA mode.
                     ->url(fn (array $record): string => FilamentSpatieLaravelBackup::getDownloadUrl($record['disk'], $record['path']))
                     ->openUrlInNewTab(),
+
+                Action::make('restore')
+                    ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.actions.restore'))
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->visible(fn (): bool => FilamentSpatieLaravelBackupPlugin::get()->isRestoreAuthorized())
+                    // Only a backup that holds a database dump has anything to put back.
+                    ->disabled(fn (array $record): bool => $record['type'] === 'files')
+                    ->modalHeading(__('filament-spatie-backup::backup.pages.backups.restore_modal.label'))
+                    ->modalDescription(__('filament-spatie-backup::backup.pages.backups.restore_modal.description'))
+                    ->modalIcon('heroicon-o-exclamation-triangle')
+                    ->modalIconColor('danger')
+                    ->modalSubmitActionLabel(__('filament-spatie-backup::backup.pages.backups.restore_modal.buttons.restore'))
+                    // No upload field: the archive is already on its destination,
+                    // which is the whole point of restoring from the list.
+                    ->schema(RestoreForm::fields(withUpload: false))
+                    ->action(fn (array $record, array $data) => RestoreForm::dispatch(
+                        disk: $record['disk'],
+                        path: $record['path'],
+                        data: $data,
+                        // A real backup on its destination: using it must not consume it.
+                        discardAfterwards: false,
+                    )),
 
                 Action::make('delete')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.actions.delete'))

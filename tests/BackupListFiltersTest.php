@@ -1,9 +1,13 @@
 <?php
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use ShuvroRoy\FilamentSpatieLaravelBackup\Components\BackupDestinationListRecords;
+use ShuvroRoy\FilamentSpatieLaravelBackup\Jobs\RestoreBackupJob;
+use ShuvroRoy\FilamentSpatieLaravelBackup\Schemas\RestoreForm;
 use ShuvroRoy\FilamentSpatieLaravelBackup\Tests\Fixtures\User;
 
 beforeEach(function () {
@@ -92,4 +96,29 @@ it('shows the disk filter once a second destination exists', function () {
 it('applies filters without waiting for an apply click', function () {
     expect(Livewire::test(BackupDestinationListRecords::class)->instance()->getTable()->hasDeferredFilters())
         ->toBeFalse();
+});
+
+it('restores a backup straight from its destination', function () {
+    Gate::define('restore-backup', fn (User $user) => true);
+    Bus::fake();
+
+    RestoreForm::dispatch(
+        disk: 'backups-disk',
+        path: 'test-app/only-db-2026-07-21-02-00-00.zip',
+        data: ['reset' => true],
+        discardAfterwards: false,
+    );
+
+    Bus::assertDispatchedAfterResponse(RestoreBackupJob::class);
+
+    // The archive is a real backup on its destination, not a disposable upload.
+    Storage::disk('backups-disk')->assertExists('test-app/only-db-2026-07-21-02-00-00.zip');
+});
+
+it('puts a restore action on every row', function () {
+    $names = collect(
+        Livewire::test(BackupDestinationListRecords::class)->instance()->getTable()->getRecordActions()
+    )->map(fn ($action) => $action->getName());
+
+    expect($names)->toContain('restore');
 });
