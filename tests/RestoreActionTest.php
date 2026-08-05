@@ -13,6 +13,7 @@ use ShuvroRoy\FilamentSpatieLaravelBackup\Tests\Fixtures\User;
 beforeEach(function () {
     Storage::fake('backups-disk');
     Storage::fake('local');
+    config()->set('livewire.temporary_file_upload.disk', 'local');
     $this->actingAs(new User);
 });
 

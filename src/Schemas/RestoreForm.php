@@ -47,6 +47,12 @@ class RestoreForm
                 ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
                 ->disk(fn (): string => FilamentSpatieLaravelBackupPlugin::get()->getRestoreUploadDisk())
                 ->directory('filament-spatie-backup-restore')
+                // Filament renames the file instead of streaming a copy of it,
+                // but only when this disk is the one Livewire parked the upload
+                // on — which is what getRestoreUploadDisk() defaults to. Copying
+                // a multi-GB archive happens inside the request that follows the
+                // upload, and outlives any sane fastcgi_read_timeout.
+                ->moveFiles()
                 // A dump of the whole database — never reachable over a URL.
                 ->visibility('private') : null,
 

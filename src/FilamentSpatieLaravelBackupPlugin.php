@@ -24,7 +24,7 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
 
     protected string $page = Backups::class;
 
-    protected string | Closure $restoreUploadDisk = 'local';
+    protected string | Closure | null $restoreUploadDisk = null;
 
     protected ?string $queue = null;
 
@@ -126,9 +126,20 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * Defaults to the disk Livewire parks temporary uploads on, so the archive
+     * is renamed into place rather than copied — a multi-GB copy happens inside
+     * the request after the upload and will not finish in time. Set it to
+     * something else only alongside a matching Livewire temp disk.
+     *
+     * Note that a public temp disk puts the archive under the web root for as
+     * long as the restore runs; point both at a private disk in that case.
+     */
     public function getRestoreUploadDisk(): string
     {
-        return $this->evaluate($this->restoreUploadDisk);
+        return $this->evaluate($this->restoreUploadDisk)
+            ?? config('livewire.temporary_file_upload.disk')
+            ?? config('filesystems.default');
     }
 
     protected function isActionAuthorized(bool | Closure | null $callback, string $ability): bool
