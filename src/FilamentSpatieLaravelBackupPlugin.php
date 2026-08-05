@@ -20,7 +20,11 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
 
     protected bool | Closure | null $authorizeDeleteUsing = null;
 
+    protected bool | Closure | null $authorizeRestoreUsing = null;
+
     protected string $page = Backups::class;
+
+    protected string | Closure $restoreUploadDisk = 'local';
 
     protected ?string $queue = null;
 
@@ -96,6 +100,35 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
     public function isDeleteAuthorized(): bool
     {
         return $this->isActionAuthorized($this->authorizeDeleteUsing, 'delete-backup');
+    }
+
+    public function authorizeRestoreUsing(bool | Closure $callback): static
+    {
+        $this->authorizeRestoreUsing = $callback;
+
+        return $this;
+    }
+
+    public function isRestoreAuthorized(): bool
+    {
+        return $this->isActionAuthorized($this->authorizeRestoreUsing, 'restore-backup');
+    }
+
+    /**
+     * Where an uploaded archive is parked for the restore to read. Not a backup
+     * destination: those hold the archives worth keeping, and an upload waiting
+     * to be restored is neither one of them nor something to retain afterwards.
+     */
+    public function restoreUploadDisk(string | Closure $disk): static
+    {
+        $this->restoreUploadDisk = $disk;
+
+        return $this;
+    }
+
+    public function getRestoreUploadDisk(): string
+    {
+        return $this->evaluate($this->restoreUploadDisk);
     }
 
     protected function isActionAuthorized(bool | Closure | null $callback, string $ability): bool

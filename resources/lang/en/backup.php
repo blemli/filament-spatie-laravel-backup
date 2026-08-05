@@ -55,6 +55,7 @@ return [
         'backups' => [
             'actions' => [
                 'create_backup' => 'Create Backup',
+                'restore_backup' => 'Restore Backup',
             ],
 
             'heading' => 'Backups',
@@ -64,6 +65,31 @@ return [
                 'backup_delete_success' => 'Deleting this backup in background.',
                 'backup_running' => 'A backup is already running. Please wait until it has finished.',
                 'backup_running_tooltip' => 'Backup in progress …',
+                'restore_success' => 'Restoring the backup in background.',
+                'restore_blocked' => 'A backup or restore is already running. Please wait until it has finished.',
+                'restore_running_tooltip' => 'Restore in progress …',
+            ],
+
+            'restore_modal' => [
+                'label' => 'Restore a backup',
+                'description' => 'The uploaded archive replaces everything in the target database. Data written since the backup was taken is lost and cannot be recovered.',
+
+                'buttons' => [
+                    'restore' => 'Restore and overwrite',
+                ],
+
+                'confirmation_phrase' => 'overwrite everything',
+
+                'fields' => [
+                    'archive' => 'Backup archive (.zip)',
+                    'connection' => 'Database connection',
+                    'password' => 'Archive password',
+                    'password_helper' => 'The password the archive was encrypted with.',
+                    'reset' => 'Drop existing tables first',
+                    'reset_helper' => 'Leaves the database exactly as the backup had it. Switch off to import on top of the current tables.',
+                    'confirmation' => 'Type “:phrase” to continue',
+                    'confirmation_mismatch' => 'Type “:phrase” exactly to confirm the restore.',
+                ],
             ],
 
             'modal' => [

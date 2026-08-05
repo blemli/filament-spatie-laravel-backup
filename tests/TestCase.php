@@ -20,6 +20,7 @@ use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
 use ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupServiceProvider;
 use ShuvroRoy\FilamentSpatieLaravelBackup\Tests\Fixtures\AdminPanelProvider;
 use Spatie\Backup\BackupServiceProvider;
+use Wnx\LaravelBackupRestore\LaravelBackupRestoreServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -50,6 +51,7 @@ class TestCase extends Orchestra
             // and Livewire's own singleton instances have to win.
             LivewireServiceProvider::class,
             BackupServiceProvider::class,
+            LaravelBackupRestoreServiceProvider::class,
             FilamentSpatieLaravelBackupServiceProvider::class,
             AdminPanelProvider::class,
         ];

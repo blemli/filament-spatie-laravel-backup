@@ -113,6 +113,7 @@ If you're using [Spatie Laravel Permission](https://spatie.be/docs/laravel-permi
 - `download-backup` – Allows downloading existing backups.
 - `delete-backup` – Allows deleting backups from the panel.
 - `create-backup` – Allows creating new backups from the panel.
+- `restore-backup` – Allows uploading an archive and restoring the database from it.
 
 ### Seeder Example
 
@@ -173,11 +174,12 @@ FilamentSpatieLaravelBackupPlugin::make()
     ->authorizeCreateUsing(fn (): bool => auth()->user()->isAdmin())
     ->authorizeDownloadUsing(true)
     ->authorizeDeleteUsing(false)
+    ->authorizeRestoreUsing(fn (): bool => auth()->user()->isOwner())
 ```
 
 Without these hooks the default gate checks (`create-backup`, `download-backup`,
-`delete-backup`) stay in effect. The checks are enforced server-side, not just by
-hiding buttons.
+`delete-backup`, `restore-backup`) stay in effect. The checks are enforced
+server-side, not just by hiding buttons.
 
 
 ## Customising navigation
@@ -365,6 +367,36 @@ While a backup is running, the create button is disabled and a server-side guard
 rejects further runs. The lock clears when the job finishes or fails, and expires on
 its own (after at least 30 minutes, or the configured timeout if longer) so a crashed
 worker can never block the button permanently.
+
+A restore takes the same kind of lock, and the two exclude each other: no restore
+starts while a backup runs, and no backup starts while a restore runs — a dump taken
+while the database is being replaced is worthless.
+
+## Restoring a backup
+
+**Restoring destroys data.** The archive replaces everything in the target
+connection, and anything written since the backup was taken is gone.
+
+The `Restore Backup` button uploads an archive and restores from it, via
+[wnx/laravel-backup-restore](https://github.com/stefanzweifel/laravel-backup-restore).
+Before it runs, the operator has to type a confirmation phrase (`overwrite
+everything`); the modal also asks for the archive password when
+`backup.backup.password` is set, and for the connection when
+`backup.backup.source.databases` lists more than one — a restore covers one
+connection per run.
+
+The work happens on the queue, because a restore of any size outlives a web
+request. The upload is parked on a disk of its own (`local` by default) rather
+than on a backup destination, and is deleted as soon as the restore finishes,
+succeed or fail — an uploaded archive is a full copy of the database:
+
+```php
+FilamentSpatieLaravelBackupPlugin::make()
+    ->restoreUploadDisk('restore-uploads')
+```
+
+Note that `backup:restore` needs the database CLI for the connection it restores
+(`mysql`, `psql`, `sqlite3`) available in the container.
 
 ## Customising who can access the page
 
