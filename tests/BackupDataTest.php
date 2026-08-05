@@ -27,6 +27,26 @@ it('maps backups including type and cleanup timestamp', function () {
         ->toBe(Carbon::parse('2026-07-27 01:30:00')->getTimestamp());
 });
 
+it('detects the type behind a configured filename prefix', function () {
+    // Spatie prepends filename_prefix to every zip, including ones created
+    // with an explicit --filename, so type detection must strip it first.
+    config()->set('backup.backup.destination.filename_prefix', 'test-app-');
+
+    Storage::fake('backups-disk');
+
+    Storage::disk('backups-disk')->put('test-app/test-app-2026-07-20-01-30-00.zip', 'full');
+    Storage::disk('backups-disk')->put('test-app/test-app-only-db-2026-07-21-02-00-00.zip', 'db');
+    Storage::disk('backups-disk')->put('test-app/test-app-only-files-2026-07-19-03-00-00.zip', 'files');
+
+    $data = collect(FilamentSpatieLaravelBackup::getBackupDestinationData('backups-disk'))
+        ->keyBy(fn (array $record): string => basename($record['path']));
+
+    expect($data)->toHaveCount(3)
+        ->and($data['test-app-2026-07-20-01-30-00.zip']['type'])->toBe('all')
+        ->and($data['test-app-only-db-2026-07-21-02-00-00.zip']['type'])->toBe('db')
+        ->and($data['test-app-only-files-2026-07-19-03-00-00.zip']['type'])->toBe('files');
+});
+
 it('generates a signed download url for disks without temporary urls', function () {
     // Not faked on purpose: Storage::fake() disks provide temporary URLs,
     // and this test covers the signed-route fallback for plain local disks.

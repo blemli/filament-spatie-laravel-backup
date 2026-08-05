@@ -71,3 +71,25 @@ it('filters by disk', function () {
         ->assertSee('2026-07-20-01-30-00.zip')
         ->assertDontSee('2026-07-18-06-00-00.zip');
 });
+
+it('hides the disk filter when there is only one destination', function () {
+    Livewire::test(BackupDestinationListRecords::class)
+        ->loadTable()
+        ->assertTableFilterHidden('disk')
+        ->assertTableFilterVisible('type');
+});
+
+it('shows the disk filter once a second destination exists', function () {
+    config()->set('backup.backup.destination.disks', ['backups-disk', 'second-disk']);
+    config()->set('filesystems.disks.second-disk', config('filesystems.disks.backups-disk'));
+    Storage::fake('second-disk');
+
+    Livewire::test(BackupDestinationListRecords::class)
+        ->loadTable()
+        ->assertTableFilterVisible('disk');
+});
+
+it('applies filters without waiting for an apply click', function () {
+    expect(Livewire::test(BackupDestinationListRecords::class)->instance()->getTable()->hasDeferredFilters())
+        ->toBeFalse();
+});

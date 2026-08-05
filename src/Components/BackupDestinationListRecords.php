@@ -48,6 +48,9 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
     {
         return $table
             ->deferLoading()
+            // The rows come from a cached listing of a handful of files, so a
+            // filter can apply the moment it is picked — nothing to batch up.
+            ->deferFilters(false)
             ->records(
                 function (?string $sortColumn, ?string $sortDirection, ?string $search, ?array $filters) {
                     $ttl = FilamentSpatieLaravelBackupPlugin::get()->getCacheTtlSeconds();
@@ -129,7 +132,10 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
             ->filters([
                 SelectFilter::make('disk')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.filters.disk'))
-                    ->options(FilamentSpatieLaravelBackup::getFilterDisks()),
+                    ->options(FilamentSpatieLaravelBackup::getFilterDisks())
+                    // With one destination the column holds the same value on every
+                    // row, so the filter could only ever narrow to everything.
+                    ->visible(fn (): bool => count(FilamentSpatieLaravelBackup::getDisks()) > 1),
                 SelectFilter::make('type')
                     ->label(__('filament-spatie-backup::backup.components.backup_destination_list.table.fields.type'))
                     ->options([

@@ -45,6 +45,14 @@ class FilamentSpatieLaravelBackup
                 ->map(function (Backup $backup) use ($disk) {
                     $file = basename($backup->path());
 
+                    // Spatie prepends the configured filename_prefix to every zip,
+                    // even ones created with an explicit --filename; strip it so
+                    // the option-based type detection below still matches.
+                    $prefix = (string) config('backup.backup.destination.filename_prefix', '');
+                    if ($prefix !== '' && str_starts_with($file, $prefix)) {
+                        $file = substr($file, strlen($prefix));
+                    }
+
                     return [
                         'disk' => $disk,
                         'path' => $backup->path(),
