@@ -73,7 +73,7 @@ return [
 
             'restore_modal' => [
                 'label' => 'Sicherung einspielen',
-                'description' => 'Die hochgeladene Datei ersetzt den gesamten Inhalt der Zieldatenbank. Alles, was seit der Sicherung erfasst wurde, ist danach unwiederbringlich weg.',
+                'description' => 'Die Sicherung ersetzt den gesamten Inhalt der Zieldatenbank. Alles, was seit der Sicherung erfasst wurde, ist danach unwiederbringlich weg. Die Seite geht dafür in den Wartungsmodus und kommt von selbst zurück.',
 
                 'buttons' => [
                     'restore' => 'Einspielen und überschreiben',
@@ -89,6 +89,8 @@ return [
                     'password_placeholder' => 'Hinterlegtes Passwort',
                     'reset' => 'Bestehende Tabellen zuerst löschen',
                     'reset_helper' => 'Stellt den Stand der Sicherung exakt wieder her. Ausgeschaltet wird über die bestehenden Tabellen eingespielt.',
+                    'media' => 'Auch die Mediendateien einspielen',
+                    'media_helper' => 'Leert den Medienordner und füllt ihn aus der Sicherung. Seit der Sicherung hochgeladene Dateien gehen verloren. Nur die Medien — die Anwendung selbst wird nie ersetzt.',
                     'confirmation' => '«:phrase» eintippen, um fortzufahren',
                     'confirmation_mismatch' => 'Bitte genau «:phrase» eintippen, um die Wiederherstellung zu bestätigen.',
                 ],

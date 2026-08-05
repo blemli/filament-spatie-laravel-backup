@@ -26,6 +26,8 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
 
     protected string | Closure | null $restoreUploadDisk = null;
 
+    protected string | Closure $restoreMediaDisk = 'public';
+
     protected ?string $queue = null;
 
     protected ?string $interval = '4s';
@@ -124,6 +126,23 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
         $this->restoreUploadDisk = $disk;
 
         return $this;
+    }
+
+    /**
+     * The disk whose files a restore puts back. Deliberately not the whole
+     * archive: it also holds the application itself, and replacing running code
+     * with an older copy of it from a zip is not a thing to do behind a button.
+     */
+    public function restoreMediaDisk(string | Closure $disk): static
+    {
+        $this->restoreMediaDisk = $disk;
+
+        return $this;
+    }
+
+    public function getRestoreMediaDisk(): string
+    {
+        return $this->evaluate($this->restoreMediaDisk);
     }
 
     /**

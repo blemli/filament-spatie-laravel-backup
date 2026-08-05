@@ -73,7 +73,7 @@ return [
 
             'restore_modal' => [
                 'label' => 'Restore a backup',
-                'description' => 'The uploaded archive replaces everything in the target database. Data written since the backup was taken is lost and cannot be recovered.',
+                'description' => 'The archive replaces everything in the target database. Data written since the backup was taken is lost and cannot be recovered. The site goes into maintenance mode for the duration and comes back on its own.',
 
                 'buttons' => [
                     'restore' => 'Restore and overwrite',
@@ -89,6 +89,8 @@ return [
                     'password_placeholder' => 'Configured password',
                     'reset' => 'Drop existing tables first',
                     'reset_helper' => 'Leaves the database exactly as the backup had it. Switch off to import on top of the current tables.',
+                    'media' => 'Also restore the media files',
+                    'media_helper' => 'Empties the media directory and refills it from the archive. Files uploaded since the backup are lost. Only the media — the application itself is never replaced.',
                     'confirmation' => 'Type “:phrase” to continue',
                     'confirmation_mismatch' => 'Type “:phrase” exactly to confirm the restore.',
                 ],

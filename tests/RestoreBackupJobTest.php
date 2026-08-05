@@ -14,6 +14,11 @@ function fakeRestoreArtisan(): MockInterface
 {
     $kernel = Mockery::mock(Kernel::class);
 
+    // The job takes the app down for the restore and brings it back; those calls
+    // are not what these tests are about.
+    $kernel->shouldReceive('call')->with('down', Mockery::any())->andReturn(0)->zeroOrMoreTimes();
+    $kernel->shouldReceive('call')->with('up')->andReturn(0)->zeroOrMoreTimes();
+
     Artisan::swap($kernel);
 
     return $kernel;
@@ -61,7 +66,7 @@ it('omits the options it has no value for', function () {
 });
 
 it('discards the uploaded archive once the restore is done', function () {
-    fakeRestoreArtisan()->shouldReceive('call')->once()->andReturn(0);
+    fakeRestoreArtisan()->shouldReceive('call')->with(RestoreCommand::class, Mockery::any())->once()->andReturn(0);
 
     (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', discardAfterwards: true))->handle();
 
@@ -69,7 +74,7 @@ it('discards the uploaded archive once the restore is done', function () {
 });
 
 it('discards the uploaded archive when the restore throws', function () {
-    fakeRestoreArtisan()->shouldReceive('call')->once()->andThrow(new RuntimeException('restore failed'));
+    fakeRestoreArtisan()->shouldReceive('call')->with(RestoreCommand::class, Mockery::any())->once()->andThrow(new RuntimeException('restore failed'));
 
     expect(fn () => (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', discardAfterwards: true))->handle())
         ->toThrow(RuntimeException::class);
@@ -103,7 +108,7 @@ it('does not share its running flag with the backup job', function () {
 });
 
 it('keeps a backup that was restored in place', function () {
-    fakeRestoreArtisan()->shouldReceive('call')->once()->andReturn(0);
+    fakeRestoreArtisan()->shouldReceive('call')->with(RestoreCommand::class, Mockery::any())->once()->andReturn(0);
 
     // Restoring from a destination must not consume the archive.
     (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->handle();
@@ -112,7 +117,44 @@ it('keeps a backup that was restored in place', function () {
 });
 
 it('restores every requested connection in turn', function () {
-    fakeRestoreArtisan()->shouldReceive('call')->twice()->andReturn(0);
+    fakeRestoreArtisan()->shouldReceive('call')->with(RestoreCommand::class, Mockery::any())->twice()->andReturn(0);
 
     (new RestoreBackupJob('uploads-disk', 'restore/archive.zip', ['sqlite', 'ceebo']))->handle();
+});
+
+it('takes the app down for the restore and brings it back', function () {
+    $calls = [];
+    $kernel = Mockery::mock(Kernel::class);
+    $kernel->shouldReceive('call')->andReturnUsing(function (string $command) use (&$calls): int {
+        $calls[] = $command;
+
+        return 0;
+    });
+    Artisan::swap($kernel);
+
+    (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->handle();
+
+    // Down first, restore, then up — writes cannot land mid-restore, and the
+    // maintenance flag is what parks the other queue workers.
+    expect($calls)->toBe(['down', RestoreCommand::class, 'up']);
+});
+
+it('brings the app back even when the restore blows up', function () {
+    $calls = [];
+    $kernel = Mockery::mock(Kernel::class);
+    $kernel->shouldReceive('call')->andReturnUsing(function (string $command) use (&$calls): int {
+        $calls[] = $command;
+
+        if ($command === RestoreCommand::class) {
+            throw new RuntimeException('restore failed');
+        }
+
+        return 0;
+    });
+    Artisan::swap($kernel);
+
+    expect(fn () => (new RestoreBackupJob('uploads-disk', 'restore/archive.zip'))->handle())
+        ->toThrow(RuntimeException::class);
+
+    expect($calls)->toContain('up');
 });

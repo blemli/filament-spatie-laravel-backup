@@ -395,8 +395,24 @@ FilamentSpatieLaravelBackupPlugin::make()
     ->restoreUploadDisk('restore-uploads')
 ```
 
+The app goes into maintenance mode for the duration and comes back on its own.
+That also parks the queue workers — a worker checks for maintenance between jobs
+and sleeps — so nothing writes while the database is being replaced. A worker
+killed outright (OOM, SIGKILL) runs neither the cleanup nor `failed()`, and the
+app stays down until someone runs `php artisan up`.
+
+Ticking **Also restore the media files** empties the media disk
+(`restoreMediaDisk()`, default `public`) and refills it from the archive.
+Only that disk: the archive also holds the application itself, and replacing
+running code with an older copy of it from a zip is not a thing to do behind a
+button. A wrong password fails before the disk is touched.
+
 Note that `backup:restore` needs the database CLI for the connection it restores
-(`mysql`, `psql`, `sqlite3`) available in the container.
+(`mysql`, `psql`, `sqlite3`) and `gunzip` available in the container.
+
+**If the queue driver is `database` and you restore that same connection**, the
+`jobs` table is replaced underneath the worker running the restore. Expect the
+queue state to come back as it was in the backup.
 
 ## Customising who can access the page
 

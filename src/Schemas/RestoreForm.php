@@ -84,6 +84,13 @@ class RestoreForm
                 ->helperText(__('filament-spatie-backup::backup.pages.backups.restore_modal.fields.reset_helper'))
                 ->default(true),
 
+            Toggle::make('media')
+                ->label(__('filament-spatie-backup::backup.pages.backups.restore_modal.fields.media'))
+                ->helperText(__('filament-spatie-backup::backup.pages.backups.restore_modal.fields.media_helper'))
+                // Off by default: a db-only archive holds no files, and emptying
+                // the media directory is not something to do by not looking.
+                ->default(false),
+
             TextInput::make('confirmation')
                 ->label(fn (): string => __('filament-spatie-backup::backup.pages.backups.restore_modal.fields.confirmation', [
                     'phrase' => static::confirmationPhrase(),
@@ -128,6 +135,7 @@ class RestoreForm
             password: filled($data['password'] ?? null) ? $data['password'] : config('backup.backup.password'),
             reset: (bool) ($data['reset'] ?? true),
             discardAfterwards: $discardAfterwards,
+            restoreMedia: (bool) ($data['media'] ?? false),
             timeout: $plugin->getTimeout(),
         );
 
