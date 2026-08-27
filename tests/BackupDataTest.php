@@ -56,3 +56,23 @@ it('generates a signed download url for disks without temporary urls', function 
         ->toContain('signature=')
         ->toContain('expires=');
 });
+
+it('lists every monitored destination, not just the primary one', function () {
+    config()->set('backup.monitor_backups', [
+        ['name' => 'test-app', 'disks' => ['backups-disk'], 'health_checks' => []],
+        ['name' => 'test-app-full', 'disks' => ['backups-disk'], 'health_checks' => []],
+    ]);
+
+    Storage::fake('backups-disk');
+
+    Storage::disk('backups-disk')->put('test-app/only-db-2026-07-21-02-00-00.zip', 'db');
+    Storage::disk('backups-disk')->put('test-app-full/2026-07-20-01-30-00.zip', 'full');
+
+    $data = collect(FilamentSpatieLaravelBackup::getBackupDestinationData('backups-disk'))
+        ->keyBy(fn (array $record): string => $record['path']);
+
+    expect($data)->toHaveCount(2)
+        ->and($data['test-app/only-db-2026-07-21-02-00-00.zip']['name'])->toBe('test-app')
+        ->and($data['test-app-full/2026-07-20-01-30-00.zip']['name'])->toBe('test-app-full')
+        ->and($data['test-app-full/2026-07-20-01-30-00.zip']['type'])->toBe('all');
+});

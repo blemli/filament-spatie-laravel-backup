@@ -192,7 +192,7 @@ class BackupDestinationListRecords extends Component implements HasActions, HasF
                     ->color('danger')
                     ->modalIcon('heroicon-o-trash')
                     ->action(function (array $record) {
-                        SpatieBackupDestination::create($record['disk'], config('backup.backup.name'))
+                        SpatieBackupDestination::create($record['disk'], $record['name'] ?? config('backup.backup.name'))
                             ->backups()
                             ->first(function (Backup $backup) use ($record) {
                                 return $backup->path() === $record['path'];

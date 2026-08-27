@@ -2,6 +2,7 @@
 
 namespace ShuvroRoy\FilamentSpatieLaravelBackup;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -37,40 +38,64 @@ class FilamentSpatieLaravelBackup
         return $result;
     }
 
+    /**
+     * Every backup destination name worth listing: the primary backup name,
+     * plus any additionally monitored ones — an app backing up into several
+     * folders (e.g. nightly db-only plus weekly full) monitors each of them.
+     * A monitored folder with no backups simply contributes no rows.
+     */
+    public static function getBackupNames(): array
+    {
+        return collect([config('backup.backup.name')])
+            ->merge(collect(config('backup.monitor_backups', []))->pluck('name'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public static function getBackupDestinationData(string $disk, int $ttlSeconds = 4): array
     {
         return Cache::remember('backups-' . $disk, now()->addSeconds($ttlSeconds), function () use ($disk) {
-            return BackupDestination::create($disk, config('backup.backup.name'))
-                ->backups()
-                ->map(function (Backup $backup) use ($disk) {
-                    $file = basename($backup->path());
-
-                    // Spatie prepends the configured filename_prefix to every zip,
-                    // even ones created with an explicit --filename; strip it so
-                    // the option-based type detection below still matches.
-                    $prefix = (string) config('backup.backup.destination.filename_prefix', '');
-                    if ($prefix !== '' && str_starts_with($file, $prefix)) {
-                        $file = substr($file, strlen($prefix));
-                    }
-
-                    return [
-                        'disk' => $disk,
-                        'path' => $backup->path(),
-                        'date' => $backup->date()->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'),
-                        'size' => Format::humanReadableSize($backup->sizeInBytes()),
-                        // Backups created from the panel are named after their option;
-                        // anything else (e.g. plain artisan backup:run) is a full backup.
-                        'type' => str_starts_with($file, 'only-db-') ? 'db' : (str_starts_with($file, 'only-files-') ? 'files' : 'all'),
-                        // End of spatie's "keep all backups" window; afterwards the
-                        // cleanup strategy thins backups out on a rotation schedule.
-                        'cleanup_at' => $backup->date()
-                            ->clone()
-                            ->addDays((int) config('backup.cleanup.default_strategy.keep_all_backups_for_days', 7))
-                            ->getTimestamp(),
-                    ];
-                })
+            return collect(static::getBackupNames())
+                ->flatMap(fn (string $name) => static::getBackupDataForName($disk, $name))
+                ->values()
                 ->toArray();
         });
+    }
+
+    protected static function getBackupDataForName(string $disk, string $name): Collection
+    {
+        return BackupDestination::create($disk, $name)
+            ->backups()
+            ->map(function (Backup $backup) use ($disk, $name) {
+                $file = basename($backup->path());
+
+                // Spatie prepends the configured filename_prefix to every zip,
+                // even ones created with an explicit --filename; strip it so
+                // the option-based type detection below still matches.
+                $prefix = (string) config('backup.backup.destination.filename_prefix', '');
+                if ($prefix !== '' && str_starts_with($file, $prefix)) {
+                    $file = substr($file, strlen($prefix));
+                }
+
+                return [
+                    'disk' => $disk,
+                    'name' => $name,
+                    'path' => $backup->path(),
+                    'date' => $backup->date()->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'),
+                    'size' => Format::humanReadableSize($backup->sizeInBytes()),
+                    // Backups created from the panel are named after their option;
+                    // anything else (e.g. plain artisan backup:run) is a full backup.
+                    'type' => str_starts_with($file, 'only-db-') ? 'db' : (str_starts_with($file, 'only-files-') ? 'files' : 'all'),
+                    // End of spatie's "keep all backups" window; afterwards the
+                    // cleanup strategy thins backups out on a rotation schedule.
+                    'cleanup_at' => $backup->date()
+                        ->clone()
+                        ->addDays((int) config('backup.cleanup.default_strategy.keep_all_backups_for_days', 7))
+                        ->getTimestamp(),
+                ];
+            });
     }
 
     /**
