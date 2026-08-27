@@ -84,3 +84,22 @@ it('clears the running flag when the job fails', function () {
 
     expect(CreateBackupJob::isRunning())->toBeFalse();
 });
+
+it('routes the full backup through the configured command', function () {
+    fakeArtisan()->shouldReceive('call')
+        ->once()
+        ->with('backup:full')
+        ->andReturn(0);
+
+    (new CreateBackupJob(Option::ALL, fullBackupCommand: 'backup:full'))->handle();
+});
+
+it('keeps the db and files options on the stock command despite a configured full command', function () {
+    fakeArtisan()->shouldReceive('call')
+        ->once()
+        ->withArgs(fn (string $command, array $options): bool => $command === BackupCommand::class
+            && $options['--only-db'] === true)
+        ->andReturn(0);
+
+    (new CreateBackupJob(Option::ONLY_DB, fullBackupCommand: 'backup:full'))->handle();
+});

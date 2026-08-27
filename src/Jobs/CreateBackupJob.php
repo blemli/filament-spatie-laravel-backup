@@ -26,6 +26,7 @@ class CreateBackupJob implements ShouldQueue
     public function __construct(
         protected readonly Option $option = Option::ALL,
         ?int $timeout = null,
+        protected readonly ?string $fullBackupCommand = null,
     ) {
         $this->timeout = $timeout;
     }
@@ -38,6 +39,16 @@ class CreateBackupJob implements ShouldQueue
         }
 
         try {
+            // An app that tiers its backups (nightly db-only next to a weekly
+            // full pipeline) can route the "everything" option through its own
+            // command, so a panel-created full backup gets the same treatment
+            // — destination, retention, complete dumps — as the scheduled one.
+            if ($this->option === Option::ALL && $this->fullBackupCommand !== null) {
+                Artisan::call($this->fullBackupCommand);
+
+                return;
+            }
+
             Artisan::call(BackupCommand::class, [
                 '--only-db' => $this->option === Option::ONLY_DB,
                 '--only-files' => $this->option === Option::ONLY_FILES,

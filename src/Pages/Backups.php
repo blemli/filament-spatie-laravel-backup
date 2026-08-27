@@ -140,7 +140,7 @@ class Backups extends Page
 
         CreateBackupJob::markAsRunning($plugin->getTimeout());
 
-        $job = new CreateBackupJob($option, $plugin->getTimeout());
+        $job = new CreateBackupJob($option, $plugin->getTimeout(), $plugin->getFullBackupCommand());
 
         if ($plugin->getQueue() !== null) {
             // afterResponse() would run the job inside the web process and ignore the

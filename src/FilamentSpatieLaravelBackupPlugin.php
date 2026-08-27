@@ -36,6 +36,8 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
 
     protected ?int $timeout = null;
 
+    protected ?string $fullBackupCommand = null;
+
     protected Closure | string | \BackedEnum $navigationIcon = 'heroicon-o-cog';
 
     protected string | Closure | null $navigationLabel = null;
@@ -284,6 +286,24 @@ class FilamentSpatieLaravelBackupPlugin implements Plugin
     public function getTimeout(): ?int
     {
         return $this->timeout;
+    }
+
+    /**
+     * Route the "create backup: db and files" action through the given
+     * artisan command instead of a bare `backup:run` — for apps whose full
+     * backups live in their own pipeline (own destination, retention, or
+     * dump configuration).
+     */
+    public function fullBackupCommand(string $command): static
+    {
+        $this->fullBackupCommand = $command;
+
+        return $this;
+    }
+
+    public function getFullBackupCommand(): ?string
+    {
+        return $this->fullBackupCommand;
     }
 
     public function statusListRecordsTable(bool $condition = true): static
